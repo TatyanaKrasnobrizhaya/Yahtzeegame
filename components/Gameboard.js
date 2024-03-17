@@ -41,18 +41,18 @@ export default function Gameboard({ navigation, route }) {
 
   const saveTotalPointsToScoreboard = async (playerName) => {
     try {
-      const totalPoints = calculateTotalPoints(selectedDicePoints, diceSpots); // Вычисляем общее количество очков
-      const newScore = { player: playerName, points: totalPoints, date: new Date() }; // Создаем объект новой записи
-      const storedScores = await AsyncStorage.getItem('scores'); // Получаем текущие записи из хранилища
+      const totalPoints = calculateTotalPoints(selectedDicePoints, diceSpots); 
+      const newScore = { player: playerName, points: totalPoints, date: new Date() }; 
+      const storedScores = await AsyncStorage.getItem('scores'); 
       let scores = [];
       if (storedScores !== null) {
         scores = JSON.parse(storedScores);
       }
-      scores.push(newScore); // Добавляем новую запись к текущим
-      await AsyncStorage.setItem('scores', JSON.stringify(scores)); // Сохраняем обновленные записи в хранилище
-      console.log('Data saved to AsyncStorage:', newScore); // Логируем успешное сохранение данных
+      scores.push(newScore); 
+      await AsyncStorage.setItem('scores', JSON.stringify(scores)); 
+      console.log('Data saved to AsyncStorage:', newScore); 
     } catch (error) {
-      console.error('Error saving totalPoints to scoreboard:', error); // Обрабатываем ошибку, если сохранение не удалось
+      console.error('Error saving totalPoints to scoreboard:', error); 
     }
   };
   

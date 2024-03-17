@@ -13,7 +13,6 @@ const Scoreboard = () => {
   const [scores, setScores] = useState([]);
 
   useEffect(() => {
-    // Загружаем данные из AsyncStorage при монтировании компонента
     const loadScores = async () => {
       try {
         const savedScores = await AsyncStorage.getItem('scores');
@@ -26,13 +25,13 @@ const Scoreboard = () => {
       }
     };
 
-    loadScores(); // Загрузка сохраненных данных
+    loadScores(); 
   }, []);
 
   const clearScoreboard = async () => {
     try {
       setScores([]);
-      await AsyncStorage.removeItem('scores'); // Удаление сохраненных данных
+      await AsyncStorage.removeItem('scores'); 
       console.log('Scoreboard cleared successfully.');
     } catch (error) {
       console.error('Error clearing scoreboard:', error);
@@ -48,7 +47,7 @@ const Scoreboard = () => {
     </DataTable.Row>
   );
 
-  // Сортировка результатов по убыванию количества очков
+ 
   const sortedScores = [...scores].sort((a, b) => b.points - a.points);
 
   return (
