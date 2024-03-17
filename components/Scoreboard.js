@@ -1,44 +1,86 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, Pressable } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Text, View, Pressable } from 'react-native';
+import { format } from 'date-fns'; 
+import { DataTable } from 'react-native-paper'; 
 import styles from '../style/style'; 
-import { horizontalScale, moderateScale, verticalScale } from '../style/Metrics.js';
+import { verticalScale } from '../style/Metrics.js';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Header from './Header'; 
 import Footer from './Footer'; 
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
 const Scoreboard = () => {
-  const [scores, setScores] = useState([
-    { player: 'Player1', points: 150 },
-    { player: 'Player2', points: 120 },
-    { player: 'Player3', points: 90 },
-  ]);
+  const [scores, setScores] = useState([]);
 
-  const clearScoreboard = () => {
-    setScores([]);
+  useEffect(() => {
+    // Загружаем данные из AsyncStorage при монтировании компонента
+    const loadScores = async () => {
+      try {
+        const savedScores = await AsyncStorage.getItem('scores');
+        console.log('Loaded scores from AsyncStorage:', savedScores);
+        if (savedScores !== null) {
+          setScores(JSON.parse(savedScores));
+        }
+      } catch (error) {
+        console.error('Error loading scores:', error);
+      }
+    };
+
+    loadScores(); // Загрузка сохраненных данных
+  }, []);
+
+  const clearScoreboard = async () => {
+    try {
+      setScores([]);
+      await AsyncStorage.removeItem('scores'); // Удаление сохраненных данных
+      console.log('Scoreboard cleared successfully.');
+    } catch (error) {
+      console.error('Error clearing scoreboard:', error);
+    }
   };
 
   const renderScoreItem = ({ item }) => (
-    <View style={styles.scoreItem}>
-      <Text>{item.player}</Text>
-      <Text>{item.points} points</Text>
-    </View>
+    <DataTable.Row>
+      <DataTable.Cell>{item.player}</DataTable.Cell>
+      <DataTable.Cell>{format(item.date, 'dd.MM.yyyy')}</DataTable.Cell> 
+      <DataTable.Cell>{format(item.date, 'HH:mm')}</DataTable.Cell> 
+      <DataTable.Cell numeric>{item.points}</DataTable.Cell>
+    </DataTable.Row>
   );
+
+  // Сортировка результатов по убыванию количества очков
+  const sortedScores = [...scores].sort((a, b) => b.points - a.points);
 
   return (
     <>
       <Header /> 
       <View style={styles.container}>
-      <MaterialCommunityIcons
+        <MaterialCommunityIcons
           name="view-list"
           size={verticalScale(90)}
           color="steelblue"
         />
-        <Text>Top Seven</Text>
-        <FlatList
-          data={scores}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={renderScoreItem}
-        />
+        <Text style={styles.gameinfo}>Top Seven</Text>
+        {sortedScores.length > 0 ? (
+          <DataTable>
+            <DataTable.Header>
+              <DataTable.Title>Player</DataTable.Title>
+              <DataTable.Title>Date</DataTable.Title>
+              <DataTable.Title>Time</DataTable.Title>
+              <DataTable.Title numeric>Points</DataTable.Title>
+            </DataTable.Header>
+            {sortedScores.map((item, index) => (
+              <DataTable.Row key={index.toString()}>
+                <DataTable.Cell>{item.player}</DataTable.Cell>
+                <DataTable.Cell>{format(item.date, 'dd.MM.yyyy')}</DataTable.Cell> 
+                <DataTable.Cell>{format(item.date, 'HH:mm')}</DataTable.Cell> 
+                <DataTable.Cell numeric>{item.points}</DataTable.Cell>
+              </DataTable.Row>
+            ))}
+          </DataTable>
+        ) : (
+          <Text style={styles.gameinfo}>No scores available</Text>
+        )}
         <Pressable style={styles.clearButton} onPress={clearScoreboard}>
           <Text  style={styles.clearButtonText}>CLEAR SCOREBOARD</Text>
         </Pressable>
