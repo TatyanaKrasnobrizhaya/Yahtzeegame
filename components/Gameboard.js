@@ -39,10 +39,17 @@ export default function Gameboard({ navigation, route }) {
     }
   }, [gameEndStatus, totalPoints, playerName]);  
 
-  const saveTotalPointsToScoreboard = async (playerName) => {
+  const saveTotalPointsToScoreboard = async () => {
     try {
-      const totalPoints = calculateTotalPoints(selectedDicePoints, diceSpots); 
-      const newScore = { player: playerName, points: totalPoints, date: new Date() }; 
+      const totalPoints = calculateTotalPoints();
+      let finalTotalPoints = totalPoints; // Переменная для хранения общего количества очков
+  
+      // Проверяем, достиг ли игрок минимального количества очков для получения бонуса
+      if (totalPoints >= BONUS_POINTS_LIMIT) {
+        finalTotalPoints += BONUS_POINTS; 
+      }
+  
+      const newScore = { player: playerName, points: finalTotalPoints, date: new Date() }; 
       const storedScores = await AsyncStorage.getItem('scores'); 
       let scores = [];
       if (storedScores !== null) {
@@ -51,20 +58,23 @@ export default function Gameboard({ navigation, route }) {
       scores.push(newScore); 
       await AsyncStorage.setItem('scores', JSON.stringify(scores)); 
       console.log('Data saved to AsyncStorage:', newScore); 
+  
+      // Возвращаем успешное сохранение данных
+      return true;
     } catch (error) {
+      // Обрабатываем ошибку сохранения данных
       console.error('Error saving totalPoints to scoreboard:', error); 
+      return false;
     }
   };
   
-  
 
   // Function to calculate the total points for the selected dices
-  const calculateTotalPoints = (selectedDicePoints, diceSpots) => {
-    const totalPointsForSelectedDices = selectedDicePoints.reduce((total, isSelected, index) => {
-      return isSelected ? total + diceSpots[index] : total;
-    }, 0);
+  const calculateTotalPoints = () => {
+    const totalPointsForSelectedDices = dicePointsTotal.reduce((total, points) => total + points, 0);
     return totalPointsForSelectedDices;
   };
+  
 
   const dicesRow = [];
   for (let dice = 0; dice < NBR_OF_DICES; dice++) {
@@ -115,15 +125,12 @@ export default function Gameboard({ navigation, route }) {
     if (nbrOfThrowsLeft === 0 && !gameEndStatus) {
       setStatus('Select your points before the next throw');
       setShowNewGameButton(true);
-      return 1;
+      return;
     } else if (nbrOfThrowsLeft === 0 && gameEndStatus) {
-      setGameEndStatus(false);
-      setDiceSpots(new Array(NBR_OF_DICES).fill(0));
-      setDicePointsTotal(new Array(MAX_SPOT).fill(0));
-      setSelectedDicePoints(new Array(MAX_SPOT).fill(false));
-      setSelectedDices(new Array(NBR_OF_DICES).fill(false));
+      startNewGame();
+      return;
     }
-  
+    
     setSelectedDicePoints(new Array(MAX_SPOT).fill(false));
   
     const spots = [];
@@ -147,6 +154,7 @@ export default function Gameboard({ navigation, route }) {
     const newTotalPoints = spots.reduce((total, points) => total + points, 0);
     setTotalPoints(newTotalPoints);
   };
+  
 
   const checkBonusPoints = () => {
     const requiredPointsForBonus = BONUS_POINTS_LIMIT;
@@ -186,18 +194,28 @@ export default function Gameboard({ navigation, route }) {
   }
 
   const selectDicePoints = (i) => {
+    if (nbrOfThrowsLeft === 0) {
+    let selected = [...selectedDices];
     let selectedPoints = [...selectedDicePoints];
     let points = [...dicePointsTotal];
-    selectedPoints[i] = true;
-    let nbrOfDices = diceSpots.reduce((count, spot) => {
-      return spot === i + 1 ? count + 1 : count;
-    }, 0);
+    if(!selectedPoints[i]) {
+      selectedPoints[i] = true;
+      let nbrOfDices = diceSpots.reduce((total, x) => (x === (i +1) ? total + 1 : total), 0);
     points[i] = nbrOfDices * (i + 1);
     setSelectedDicePoints(selectedPoints);
     setDicePointsTotal(points);
     updateTotalPoints();
+    setNbrOfThrowsLeft(NBR_OF_THROWS);
     return points[i];
-  };
+  }
+  else {
+    setStatus('You already selected points for' + (i + 1));
+  }
+}
+  else{
+    setStatus("Throw" + NBR_OF_THROWS + "times before setting points.")
+  }
+}
 
   function getDicePointsColor(i) {
     return (selectedDicePoints[i] && !gameEndStatus)
@@ -214,6 +232,14 @@ export default function Gameboard({ navigation, route }) {
     setSelectedDicePoints(new Array(MAX_SPOT).fill(false));
     setDicePointsTotal(new Array(MAX_SPOT).fill(0));
     setShowNewGameButton(false); 
+  
+    // Вызываем функцию сохранения данных при начале новой игры
+    const saveSuccess = saveTotalPointsToScoreboard();
+    if (saveSuccess) {
+      console.log('Total points saved to scoreboard.'); 
+    } else {
+      console.log('Failed to save total points to scoreboard.'); 
+    }
   };
 
   return (
