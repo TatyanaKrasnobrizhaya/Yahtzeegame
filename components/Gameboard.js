@@ -15,16 +15,28 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import styles from '../style/style';
 
 export default function Gameboard({ navigation, route }) {
+
+  //Stores the number of remaining throws 
   const [nbrOfThrowsLeft, setNbrOfThrowsLeft] = useState(NBR_OF_THROWS);
+  //Current game status
   const [status, setStatus] = useState('Throw dices');
+  //Is the game over
   const [gameEndStatus, setGameEndStatus] = useState(false);
+  //Stores the player's name 
   const [playerName, setPlayerName] = useState('');
+  //Stores the player's total number of points
   const [totalPoints, setTotalPoints] = useState(0);
+  //Stores information about the selected bones
   const [selectedDices, setSelectedDices] = useState(new Array(NBR_OF_DICES).fill(false));
+  //Maintains the value of dropped points on the dice
   const [diceSpots, setDiceSpots] = useState(new Array(NBR_OF_DICES).fill(0));
+  //Displays whether points have been selected on the dice
   const [selectedDicePoints, setSelectedDicePoints] = useState(new Array(MAX_SPOT).fill(false));
+  //Stores the total number of points for each combination 
   const [dicePointsTotal, setDicePointsTotal] = useState(new Array(MAX_SPOT).fill(0));
+  //An icon for each dice
   const [diceIcons, setDiceIcons] = useState(new Array(NBR_OF_DICES).fill(''));
+  //Does the "New Game" button need to be shown
   const [showNewGameButton, setShowNewGameButton] = useState(false);
 
   useEffect(() => {
@@ -39,12 +51,14 @@ export default function Gameboard({ navigation, route }) {
     }
   }, [gameEndStatus, totalPoints, playerName]);  
 
+
+  //Keeping the number of points 
   const saveTotalPointsToScoreboard = async () => {
     try {
       const totalPoints = calculateTotalPoints();
-      let finalTotalPoints = totalPoints; // Переменная для хранения общего количества очков
+      let finalTotalPoints = totalPoints; // Variable to store the total number of points
   
-      // Проверяем, достиг ли игрок минимального количества очков для получения бонуса
+      // Checking whether the player has reached the minimum number of points to receive the bonus
       if (totalPoints >= BONUS_POINTS_LIMIT) {
         finalTotalPoints += BONUS_POINTS; 
       }
@@ -59,10 +73,10 @@ export default function Gameboard({ navigation, route }) {
       await AsyncStorage.setItem('scores', JSON.stringify(scores)); 
       console.log('Data saved to AsyncStorage:', newScore); 
   
-      // Возвращаем успешное сохранение данных
+      // Returning a successful data save
       return true;
     } catch (error) {
-      // Обрабатываем ошибку сохранения данных
+      // Handling data saving error
       console.error('Error saving totalPoints to scoreboard:', error); 
       return false;
     }
@@ -76,6 +90,8 @@ export default function Gameboard({ navigation, route }) {
   };
   
 
+
+  //Create a number of elements for displaying dice
   const dicesRow = [];
   for (let dice = 0; dice < NBR_OF_DICES; dice++) {
     dicesRow.push(
@@ -193,6 +209,8 @@ export default function Gameboard({ navigation, route }) {
     return selectedDices[i] ? 'black' : 'steelblue';
   }
 
+
+  //Inserted the correct data 
   const selectDicePoints = (i) => {
     if (nbrOfThrowsLeft === 0) {
     let selected = [...selectedDices];
@@ -233,7 +251,7 @@ export default function Gameboard({ navigation, route }) {
     setDicePointsTotal(new Array(MAX_SPOT).fill(0));
     setShowNewGameButton(false); 
   
-    // Вызываем функцию сохранения данных при начале новой игры
+    // Call the data saving function when starting a new game
     const saveSuccess = saveTotalPointsToScoreboard();
     if (saveSuccess) {
       console.log('Total points saved to scoreboard.'); 
@@ -254,8 +272,8 @@ export default function Gameboard({ navigation, route }) {
         <Pressable style={styles.button} onPress={throwDices}>
           <Text style={styles.buttonText}>THROW DICES</Text>
         </Pressable>
-        <Text style={styles.gameinfo}>Total: {calculateTotalPoints(selectedDicePoints, diceSpots)}</Text>
-        <Text>You are {BONUS_POINTS_LIMIT - calculateTotalPoints(selectedDicePoints, diceSpots)} points away from bonus</Text>
+        <Text style={styles.gameinfo}>Total: {calculateTotalPoints(dicePointsTotal)}</Text>
+        <Text>You are {BONUS_POINTS_LIMIT - calculateTotalPoints(dicePointsTotal)} points away from bonus</Text>
         <Container fluid>
           <Row style={[styles.gameinfo, styles.row]}>{pointsRow}</Row>
         </Container>
